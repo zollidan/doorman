@@ -34,7 +34,7 @@ func New() *Config {
 	}
 
 	return &Config{
-		ServerAddress:       getEnv("SERVER_ADDRESS", ":3333"),
+		ServerAddress:       getEnv("SERVER_ADDRESS", ":2222"),
 		DBURL:               getEnv("DB_URL", "host=localhost user=doorman_user password=doorman_password dbname=doorman_db port=5432 sslmode=disable TimeZone=UTC"),
 		AppMode:             getEnv("APP_MODE", "development"),
 		JWTSecret:           getEnv("JWT_SECRET", "change-this-secret-key"),

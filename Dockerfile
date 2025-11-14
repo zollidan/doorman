@@ -21,6 +21,6 @@ COPY --from=builder /app/doorman .
 
 RUN mkdir -p /var/log/doorman
 
-EXPOSE 3333
+EXPOSE 2222
 
 CMD ["./doorman"]
