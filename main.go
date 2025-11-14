@@ -17,7 +17,7 @@ func main() {
 
 	db := database.Init(cfg)
 
-	handlers := handlers.New(db)
+	handlers := handlers.New(cfg, db)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)

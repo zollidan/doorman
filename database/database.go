@@ -10,7 +10,7 @@ import (
 )
 
 type Model interface {
-	models.User
+	models.User | models.RefreshToken | models.Session | models.LoginAttempt
 }
 
 func Init(cfg *config.Config) *gorm.DB {
@@ -37,4 +37,12 @@ func Create[T Model](db *gorm.DB, item *T) error {
 		return err
 	}
 	return nil
+}
+
+func GetByEmail[T Model](db *gorm.DB, email string) (*T, error) {
+	result, err := gorm.G[T](db).Where("email = ?", email).First(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
