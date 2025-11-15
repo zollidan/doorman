@@ -36,7 +36,7 @@ func IssueTokens(user *models.User, jwtSecret string, db *gorm.DB) (string, stri
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": user.ID,
 		"email":   user.Email,
-		"typ": "access",
+		"type": "access",
 		"exp": jwt.NewNumericDate(accessTokenExpiration),
 	})
 

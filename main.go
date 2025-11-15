@@ -27,6 +27,9 @@ func main() {
 		r.Post("/register",	handlers.RegisterHandler)
 		r.Post("/token/refresh", handlers.RefreshTokenHandler)
 	})
+	r.Route("/users", func(r chi.Router) {
+		r.Get("/me", handlers.GetUserInfo)
+	})
 
 	fmt.Printf("Server is running on %s", cfg.ServerAddress)
 	http.ListenAndServe(cfg.ServerAddress, r)

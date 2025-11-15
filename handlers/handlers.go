@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/zollidan/doorman/config"
 	"github.com/zollidan/doorman/database"
 	"github.com/zollidan/doorman/models"
@@ -135,7 +136,7 @@ func (h *Handlers) RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 		return []byte(h.cfg.JWTSecret), nil
-	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}), jwt.WithExpirationRequired())
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error parsing token: %s", err.Error()), http.StatusUnauthorized)
 		return
@@ -169,6 +170,64 @@ func (h *Handlers) RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 		AccessToken: accessTokenString,
 		RefreshToken: refreshTokenString,
 		TokenType: "Bearer",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
+func (h *Handlers) GetUserInfo(w http.ResponseWriter, r *http.Request) {
+	tokenInRequest, ok := utils.ExtractBearerToken(r)
+	if !ok {
+		http.Error(w, "Error extracting token", http.StatusUnauthorized)
+		return
+	}
+
+	token, err := jwt.Parse(tokenInRequest, func(token *jwt.Token) (any, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(h.cfg.JWTSecret), nil
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}), jwt.WithExpirationRequired())
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error parsing token: %s", err.Error()), http.StatusUnauthorized)
+		return
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+		return
+	}
+
+	tokenType, ok := claims["type"].(string)
+	if !ok || tokenType != "access" {
+		http.Error(w, "Invalid token type", http.StatusUnauthorized)
+		return
+	}
+
+	userID, ok := claims["user_id"].(uuid.UUID)
+	if !ok {
+		http.Error(w, "Invalid token payload", http.StatusUnauthorized)
+		return
+	}
+
+	user, err := database.GetBy[models.User](h.db, "id", userID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			http.Error(w, "User not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, fmt.Sprintf("Error fetching user: %s", err.Error()), http.StatusInternalServerError)
+		return
+	}
+
+	resp := &schemas.UserResponse{
+		ID: user.ID,
+		Username: user.Username,
+		Email: user.Email,
+		EmailVerified: user.EmailVerified,
+		IsActive: user.IsActive,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

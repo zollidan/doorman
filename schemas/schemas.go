@@ -2,6 +2,10 @@ package schemas
 
 import "github.com/google/uuid"
 
+// type TokenClaims struct {
+
+// }
+
 type RegisterUserRequest struct {
 	Username string `json:"username" binding:"required,min=3,max=50"`
 	Email    string `json:"email" binding:"required,email"`
