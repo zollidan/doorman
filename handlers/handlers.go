@@ -63,7 +63,7 @@ func (h *Handlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := database.GetByEmail[models.User](h.db, req.Email)
+	result, err := database.GetBy[models.User](h.db, "email", req.Email)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			database.Create(h.db, &models.LoginAttempt{
@@ -115,7 +115,7 @@ func (h *Handlers) RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenInDatabase, err := database.GetByToken[models.RefreshToken](h.db, req.RefreshToken)
+	tokenInDatabase, err := database.GetBy[models.RefreshToken](h.db, "token", req.RefreshToken)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			http.Error(w, "Invalid refresh token", http.StatusUnauthorized)

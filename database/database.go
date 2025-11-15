@@ -40,16 +40,8 @@ func Create[T Model](db *gorm.DB, item *T) error {
 	return nil
 }
 
-func GetByEmail[T Model](db *gorm.DB, email string) (*T, error) {
-	result, err := gorm.G[T](db).Where("email = ?", email).First(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	return &result, nil
-}
-
-func GetByToken[T Model](db *gorm.DB, token string) (*T, error) {
-	result, err := gorm.G[T](db).Where("token = ?", token).Preload("User", nil).First(context.Background())
+func GetBy[T Model](db *gorm.DB, searchField string, value any) (*T, error) {
+	result, err := gorm.G[T](db).Where(searchField + " = ?", value).First(context.Background())
 	if err != nil {
 		return nil, err
 	}
