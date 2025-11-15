@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/zollidan/doorman/config"
 	"github.com/zollidan/doorman/models"
 	"gorm.io/driver/postgres"
@@ -45,4 +46,21 @@ func GetByEmail[T Model](db *gorm.DB, email string) (*T, error) {
 		return nil, err
 	}
 	return &result, nil
+}
+
+func GetByToken[T Model](db *gorm.DB, token string) (*T, error) {
+	result, err := gorm.G[T](db).Where("token = ?", token).Preload("User", nil).First(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func Delete[T Model](db *gorm.DB, id uuid.UUID) (int, error) {
+	result, err := gorm.G[T](db).Where("id = ?", id).Delete(context.Background())
+	if err != nil {
+		return 0, err
+	}
+	
+	return result, nil
 }

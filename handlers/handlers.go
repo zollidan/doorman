@@ -11,6 +11,7 @@ import (
 	"github.com/zollidan/doorman/database"
 	"github.com/zollidan/doorman/models"
 	"github.com/zollidan/doorman/schemas"
+	"github.com/zollidan/doorman/utils"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -88,56 +89,79 @@ func (h *Handlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessTokenExpiration := time.Now().Add(15 * time.Minute)
-	refreshTokenExpiration := time.Now().Add(7 * 24 * time.Hour)
-
-	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": result.ID,
-		"email":   result.Email,
-		"typ": "access",
-		"exp": jwt.NewNumericDate(accessTokenExpiration),
-	})
-
-	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": result.ID,
-		"email":   result.Email,
-		"typ": "refresh",
-		"exp": jwt.NewNumericDate(refreshTokenExpiration),
-	})
-
-	accessTokenString, err := accessToken.SignedString([]byte(h.cfg.JWTSecret))
+	accessTokenString, refreshTokenString, err := utils.IssueTokens(result, h.cfg.JWTSecret, h.db)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error generating access token: %s", err.Error()), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Error issuing tokens: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
 
-	refreshTokenString, err := refreshToken.SignedString([]byte(h.cfg.JWTSecret))
+
+	resp := &schemas.TokenResponse{
+		AccessToken: accessTokenString,
+		RefreshToken: refreshTokenString,
+		TokenType: "Bearer",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
+func (h *Handlers) RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
+	var req *schemas.RefreshRequest
+
+	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error generating refresh token: %s", err.Error()), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Error invalid JSON: %s", err.Error()), http.StatusBadRequest)
 		return
 	}
 
-	refreshTokenModel := &models.RefreshToken{
-		UserID: result.ID,
-		Token: refreshTokenString,
-		ExpiresAt: refreshTokenExpiration,
-	}
-
-	err = database.Create(h.db, refreshTokenModel)
+	tokenInDatabase, err := database.GetByToken[models.RefreshToken](h.db, req.RefreshToken)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error saving refresh token: %s", err.Error()), http.StatusInternalServerError)
+		if err == gorm.ErrRecordNotFound {
+			http.Error(w, "Invalid refresh token", http.StatusUnauthorized)
+			return
+		}
+		http.Error(w, fmt.Sprintf("Error fetching refresh token: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
 
-	session := &models.Session{
-		UserID: result.ID,
-		Token: accessTokenString,
-		ExpiresAt: accessTokenExpiration,
-	}	
+	if time.Now().After(tokenInDatabase.ExpiresAt) {
+		http.Error(w, "Refresh token has expired", http.StatusUnauthorized)
+		return
+	}
 
-	err = database.Create(h.db, session)
+	token, err := jwt.Parse(req.RefreshToken, func(token *jwt.Token) (any, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(h.cfg.JWTSecret), nil
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error saving session: %s", err.Error()), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Error parsing token: %s", err.Error()), http.StatusUnauthorized)
+		return
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+		return
+	}
+
+	tokenType, ok := claims["type"].(string)
+	if !ok || tokenType != "refresh" {
+		http.Error(w, "Invalid token type", http.StatusUnauthorized)
+		return
+	}
+
+	accessTokenString, refreshTokenString, err := utils.IssueTokens(&tokenInDatabase.User, h.cfg.JWTSecret, h.db)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error issuing tokens: %s", err.Error()), http.StatusInternalServerError)
+		return
+	}
+
+	_, err = database.Delete[models.RefreshToken](h.db, tokenInDatabase.ID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error deleting refresh token: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
 

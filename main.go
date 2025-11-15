@@ -23,10 +23,9 @@ func main() {
 	r.Use(middleware.Logger)
 
 	r.Route("/auth", func(r chi.Router) {
-		// r.Post("/login", handlers.LoginHandler)
+		r.Post("/login", handlers.LoginHandler)
 		r.Post("/register",	handlers.RegisterHandler)
-		// r.Get("/verify", handlers.VerifyHandler)
-		
+		r.Post("/token/refresh", handlers.RefreshTokenHandler)
 	})
 
 	fmt.Printf("Server is running on %s", cfg.ServerAddress)

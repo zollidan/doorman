@@ -26,3 +26,7 @@ type UserResponse struct {
 	EmailVerified bool      `json:"email_verified"`
 	IsActive      bool      `json:"is_active"`
 }
+
+type RefreshRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
