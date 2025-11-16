@@ -1,4 +1,34 @@
-# .env file is loaded via docker-compose env_file, not needed in image
+# Git
+.git
+.github
+.gitignore
+
+# Environment files
 .env
+.env.local
+
+# Database files
 *.db
+*.db-shm
+*.db-wal
+data/
+
+# Logs
+*.log
 app.log
+
+# Documentation
+README.md
+LICENSE
+docs/
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
