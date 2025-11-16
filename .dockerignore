@@ -1,0 +1,4 @@
+# .env file is loaded via docker-compose env_file, not needed in image
+.env
+*.db
+app.log

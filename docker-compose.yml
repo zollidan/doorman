@@ -1,4 +1,21 @@
 services:
+  doorman:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: doorman-app
+    env_file:
+      - .env
+    ports:
+      - "2222:2222"
+    volumes:
+      - ./doorman.db:/root/doorman.db
+      # - ./app.log:/root/app.log
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
   postgres:
     image: postgres:16-alpine
     container_name: doorman-postgres
@@ -8,6 +25,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U doorman_user -d doorman_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:

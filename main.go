@@ -21,6 +21,7 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/login", handlers.LoginHandler)
