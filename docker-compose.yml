@@ -1,76 +1,13 @@
-version: '3.8'
-
 services:
   postgres:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     container_name: doorman-postgres
-    hostname: postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-doorman_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-doorman_password}
-      POSTGRES_DB: ${POSTGRES_DB:-doorman_db}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+    env_file:
+      - .env
     volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./init-db:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-doorman_user}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    networks:
-      - doorman-network
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  doorman:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: doorman-app
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      SERVER_ADDRESS: ${SERVER_ADDRESS:-:3333}
-      DB_URL: ${DB_URL}
-      APP_MODE: ${APP_MODE:-development}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRY: ${JWT_EXPIRY:-15m}
-      REFRESH_TOKEN_EXPIRY: ${REFRESH_TOKEN_EXPIRY:-7d}
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-      LOG_FORMAT: ${LOG_FORMAT:-json}
-      LOG_OUTPUT: ${LOG_OUTPUT:-stdout}
+      - postgres_data:/var/lib/postgresql/data
     ports:
-      - "${SERVER_PORT:-3333}:3333"
-    volumes:
-      - ./logs:/var/log/doorman
-    networks:
-      - doorman-network
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "5"
-        labels: "service=doorman"
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3333/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      - "5432:5432"
 
 volumes:
-  pgdata:
-    driver: local
-
-networks:
-  doorman-network:
-    driver: bridge
+  postgres_data:

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 	"github.com/zollidan/doorman/config"
 	"github.com/zollidan/doorman/database"
 	"github.com/zollidan/doorman/models"
@@ -19,7 +18,7 @@ import (
 
 type Handlers struct {
 	cfg *config.Config
-	db *gorm.DB
+	db  *gorm.DB
 }
 
 func New(cfg *config.Config, db *gorm.DB) *Handlers {
@@ -42,8 +41,8 @@ func (h *Handlers) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := &models.User{
-		Username: req.Username,
-		Email:    req.Email,
+		Username:     req.Username,
+		Email:        req.Email,
 		PasswordHash: string(hashedPassword),
 	}
 
@@ -52,7 +51,13 @@ func (h *Handlers) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Error creating user: %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
-			
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(schemas.RegisterUserResponse{
+		ID:       user.ID,
+		Username: user.Username,
+		Email:    user.Email,
+	})
 }
 
 func (h *Handlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +73,7 @@ func (h *Handlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			database.Create(h.db, &models.LoginAttempt{
-				Email: req.Email,
+				Email:      req.Email,
 				Successful: false,
 				FailReason: "Invalid email",
 			})
@@ -82,7 +87,7 @@ func (h *Handlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	err = bcrypt.CompareHashAndPassword([]byte(result.PasswordHash), []byte(req.Password))
 	if err != nil {
 		database.Create(h.db, &models.LoginAttempt{
-			Email: req.Email,
+			Email:      req.Email,
 			Successful: false,
 			FailReason: "Invalid password",
 		})
@@ -96,11 +101,10 @@ func (h *Handlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	resp := &schemas.TokenResponse{
-		AccessToken: accessTokenString,
+		AccessToken:  accessTokenString,
 		RefreshToken: refreshTokenString,
-		TokenType: "Bearer",
+		TokenType:    "Bearer",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -167,9 +171,9 @@ func (h *Handlers) RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := &schemas.TokenResponse{
-		AccessToken: accessTokenString,
+		AccessToken:  accessTokenString,
 		RefreshToken: refreshTokenString,
-		TokenType: "Bearer",
+		TokenType:    "Bearer",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -206,7 +210,7 @@ func (h *Handlers) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, ok := claims["user_id"].(uuid.UUID)
+	userID, ok := claims["user_id"].(string)
 	if !ok {
 		http.Error(w, "Invalid token payload", http.StatusUnauthorized)
 		return
@@ -223,11 +227,11 @@ func (h *Handlers) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := &schemas.UserResponse{
-		ID: user.ID,
-		Username: user.Username,
-		Email: user.Email,
+		ID:            user.ID,
+		Username:      user.Username,
+		Email:         user.Email,
 		EmailVerified: user.EmailVerified,
-		IsActive: user.IsActive,
+		IsActive:      user.IsActive,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

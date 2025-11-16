@@ -12,6 +12,12 @@ type RegisterUserRequest struct {
 	Password string `json:"password" binding:"required,min=8"`
 }
 
+type RegisterUserResponse struct {
+	ID       uuid.UUID `json:"id"`
+	Username string    `json:"username"`
+	Email    string    `json:"email"`
+}
+
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`

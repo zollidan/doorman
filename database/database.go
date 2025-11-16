@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/zollidan/doorman/config"
@@ -16,7 +17,8 @@ type Model interface {
 
 func Init(cfg *config.Config) *gorm.DB {
 
-	db, err := gorm.Open(postgres.Open(cfg.DBURL), &gorm.Config{})
+	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", cfg.POSTGRES_USER, cfg.POSTGRES_PASSWORD, cfg.POSTGRES_HOST, cfg.POSTGRES_PORT, cfg.POSTGRES_DB)
+	db, err := gorm.Open(postgres.Open(dbURL), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
@@ -31,7 +33,6 @@ func Init(cfg *config.Config) *gorm.DB {
 	return db
 }
 
-
 func Create[T Model](db *gorm.DB, item *T) error {
 	err := gorm.G[T](db).Create(context.Background(), item)
 	if err != nil {
@@ -41,7 +42,7 @@ func Create[T Model](db *gorm.DB, item *T) error {
 }
 
 func GetBy[T Model](db *gorm.DB, searchField string, value any) (*T, error) {
-	result, err := gorm.G[T](db).Where(searchField + " = ?", value).First(context.Background())
+	result, err := gorm.G[T](db).Where(searchField+" = ?", value).First(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -53,6 +54,6 @@ func Delete[T Model](db *gorm.DB, id uuid.UUID) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	
+
 	return result, nil
 }

@@ -7,19 +7,21 @@ import (
 	"github.com/joho/godotenv"
 )
 
-
 type Config struct {
-	ServerAddress       string
-	DBURL               string
-	AppMode             string
-	JWTSecret           string
-	JWTExpiry           string
-	RefreshTokenExpiry  string
-	LogLevel            string
-	LogFormat           string
-	LogOutput           string
-	MaxLoginAttempts    int
-	LoginAttemptWindow  string
+	ServerAddress      string
+	POSTGRES_USER      string
+	POSTGRES_PASSWORD  string
+	POSTGRES_DB        string
+	POSTGRES_HOST      string
+	POSTGRES_PORT      string
+	AppMode            string
+	JWTSecret          string
+	JWTExpiry          string
+	RefreshTokenExpiry string
+	LogLevel           string
+	LogFormat          string
+	LogOutput          string
+	MaxLoginAttempts   int
 }
 
 func New() *Config {
@@ -34,17 +36,20 @@ func New() *Config {
 	}
 
 	return &Config{
-		ServerAddress:       getEnv("SERVER_ADDRESS", ":2222"),
-		DBURL:               getEnv("DB_URL", "host=localhost user=doorman_user password=doorman_password dbname=doorman_db port=5432 sslmode=disable TimeZone=UTC"),
-		AppMode:             getEnv("APP_MODE", "development"),
-		JWTSecret:           getEnv("JWT_SECRET", "change-this-secret-key"),
-		JWTExpiry:           getEnv("JWT_EXPIRY", "15m"),
-		RefreshTokenExpiry:  getEnv("REFRESH_TOKEN_EXPIRY", "7d"),
-		LogLevel:            getEnv("LOG_LEVEL", "info"),
-		LogFormat:           getEnv("LOG_FORMAT", "json"),
-		LogOutput:           getEnv("LOG_OUTPUT", "stdout"),
-		MaxLoginAttempts:    5,
-		LoginAttemptWindow:  getEnv("LOGIN_ATTEMPT_WINDOW", "15m"),
+		ServerAddress:      getEnv("SERVER_ADDRESS", ":2222"),
+		AppMode:            getEnv("APP_MODE", "development"),
+		POSTGRES_USER:      getEnv("POSTGRES_USER", "doorman_user"),
+		POSTGRES_PASSWORD:  getEnv("POSTGRES_PASSWORD", "doorman_password"),
+		POSTGRES_DB:        getEnv("POSTGRES_DB", "doorman_db"),
+		POSTGRES_HOST:      getEnv("POSTGRES_HOST", "localhost"),
+		POSTGRES_PORT:      getEnv("POSTGRES_PORT", "5432"),
+		JWTSecret:          getEnv("JWT_SECRET", "change-this-secret-key"),
+		JWTExpiry:          getEnv("JWT_EXPIRY", "15m"),
+		RefreshTokenExpiry: getEnv("REFRESH_TOKEN_EXPIRY", "7d"),
+		LogLevel:           getEnv("LOG_LEVEL", "info"),
+		LogFormat:          getEnv("LOG_FORMAT", "json"),
+		LogOutput:          getEnv("LOG_OUTPUT", "stdout"),
+		MaxLoginAttempts:   5,
 	}
 }
 
