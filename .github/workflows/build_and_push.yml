@@ -45,7 +45,7 @@ jobs:
         uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         with:
           images: |
-            ${{ secrets.DOCKER_USERNAME }}/${{ github.event.repository.name }}
+            dlzleskkkkkkk/${{ github.event.repository.name }}
             ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
 
       - name: Build and push Docker images
