@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -22,10 +23,11 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(middleware.Heartbeat("/health"))
 
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/login", handlers.LoginHandler)
-		r.Post("/register",	handlers.RegisterHandler)
+		r.Post("/register", handlers.RegisterHandler)
 		r.Post("/token/refresh", handlers.RefreshTokenHandler)
 	})
 	r.Route("/users", func(r chi.Router) {
@@ -33,5 +35,8 @@ func main() {
 	})
 
 	fmt.Printf("Server is running on %s", cfg.ServerAddress)
-	http.ListenAndServe(cfg.ServerAddress, r)
+	err := http.ListenAndServe(cfg.ServerAddress, r)
+	if err != nil {
+		log.Fatalf("Error server: %s", err)
+	}
 }

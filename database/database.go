@@ -9,7 +9,6 @@ import (
 	"github.com/zollidan/doorman/config"
 	"github.com/zollidan/doorman/models"
 	"gorm.io/driver/postgres"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -26,15 +25,7 @@ func Init(cfg *config.Config) *gorm.DB {
 
 	if err != nil {
 		log.Printf("Failed to connect to PostgreSQL: %v", err)
-		log.Println("Falling back to SQLite database...")
-
-		db, err = gorm.Open(sqlite.Open("doorman.db"), &gorm.Config{})
-		if err != nil {
-			panic("failed to connect to any database")
-		}
-		log.Println("Successfully connected to SQLite database")
-	} else {
-		log.Println("Successfully connected to PostgreSQL database")
+		panic("failed to connect to any database")
 	}
 
 	db.AutoMigrate(
@@ -43,6 +34,8 @@ func Init(cfg *config.Config) *gorm.DB {
 		&models.RefreshToken{},
 		&models.LoginAttempt{},
 	)
+
+	fmt.Println("Connected to PostgreSQL database successfully")
 
 	return db
 }

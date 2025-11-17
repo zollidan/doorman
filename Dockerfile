@@ -1,7 +1,4 @@
-# Multi-stage build for production-ready Doorman image
-
-# Build stage
-FROM golang:1.25.1-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache git gcc musl-dev
@@ -18,7 +15,7 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -ldflags="-s -w" -o doorman .
+RUN CGO_ENABLED=0 go build -o doorman .
 
 # Runtime stage
 FROM alpine:latest
